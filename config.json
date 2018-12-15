@@ -1,0 +1,15 @@
+{
+	"Recovery Password" : "bsn",
+	"Hostname" : "analytics",
+	"IPv4 address/subnet mask" : "10.9.40.100/24",
+	"Default Gateway" : "10.9.40.1",
+	"Password" : "adminadmin",
+	"DNS1" : "10.3.0.4",
+	"DNS2" : "10.1.5.200",
+	"DNS domain" : "qa.bigswitch.com",
+	"New Cluster" : "Yes",
+	"Active Node" : "10.9.4.3",
+	"Cluster Name" : "Test",
+	"Cluster Description" : "Test",
+	"ifCustomeNTP" : "No"
+}
