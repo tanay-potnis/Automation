@@ -1,29 +1,114 @@
 #!/usr/bin/python
 
+from multiprocessing import Process
 import os
 import pexpect
 import time
 import sys
 import urllib
+import json
+##########################
+#GLOBAL VARIABLES
+#########################
+
+IDRAC_IP_ACTIVE=    "10.9.18.23"
+RECOVERY_PASSWD =   "BSN"
+HOSTNAME =          "DEVICE"
+IPV4_ADD =          "10.9.18.235/23"
+DEFAULT_GATEWAY =   "123.234.234.23"
+ADMIN_PASSWD =      "ADMIN"
+DNS1 =              "10.3.0.4"
+DNS2 =              "10.1.5.200"
+DNS_DOMAIN =        "QA.BIGSWITCH.COM"
+NEW_CLUSTER =       "YES"
+ACTIVE_NODE =       "10.9.40.100"
+CLUSTER_NAME =      "TEST"
+CLUSTER_DESC =      "TEST"
+IF_C_NTP =          "NO"
+CONSOLE_IP =        "10.1.8.206"
+CONSOLE_PORT_A=     "7011"
+
+##########################
+##########################
 
 def main():
 
     print("Initiating auto Install")
-    access_drac()
+    import_config()
+    print("Pulling image")
+    if(len(sys.argv)>2):
+        print("Too many arguments")
+        #print(sys.argv)
+        sys.exit(1)
+
+    if(len(sys.argv)<2):
+        print("Not enough arguments Restart with Jenkins URL")
+        sys.exit(1)
+    
+    
+    url = sys.argv[1]
+    get_image(url)
+    data = import_config()
+    
+    access_drac(data)
     print("System Rebooting....This will take a few minutes")
     print("...........................")
     
     time.sleep(420)
-    access_console()
+    access_console(data)
     print("Your Node is set up")
 
+###############################################################################################
+##############################################################################################
+
+def import_config():
+    if(os.path.isfile("/home/br/scripts/config.json")==False):
+        print("configuration file config.json missing")
+        exit(1)
+    
+    with open('config.json') as f:
+        data = json.load(f)
+
+    #IDRAC_IP_ACTIVE = data['IdracIp']
+    #print IDRAC_IP
+    #RECOVERY_PASSWD =   data['Recovery Password']
+    #HOSTNAME =          data['Hostname']
+    #IPV4_ADD =          data['IPv4 address/subnet mask']
+    #DEFAULT_GATEWAY =   data['Default Gateway']
+    #ADMIN_PASSWD =      data['Password']
+    #DNS1 =              data['DNS1']
+    #DNS2 =              data['DNS2']
+    #DNS_DOMAIN =        data['DNS domain']
+    #NEW_CLUSTER =       data['New Cluster']
+    #ACTIVE_NODE =       data['Active Node']
+    #CLUSTER_NAME =      data['Cluster Name']
+    #CLUSTER_DESC =      data['Cluster Description']
+    #IF_C_NTP =          data['ifCustomeNTP']
+    #CONSOLE_IP =        data['ConsoleServer']
+    #CONSOLE_PORT_A=     data['ActiveConsolePort']
+    
+    return data
+
+###############################################################################################
+###############################################################################################
 def get_image(image):
 
-    urllib.urlretrieve(image, filename="/home/br/images/image1.iso")    
-    
+        if(os.path.isfile("/home/br/images/image1.iso")):
+            os.remove("/home/br/images/image1.iso")
+
+        time.sleep(2)
+        urllib.urlretrieve(image, filename="/home/br/images/image1.iso")    
+        time.sleep(3)
+
+        if(os.path.isfile("/home/br/images/image1.iso")):
+            return
+        else:
+            print("Unable to retrieve Image")
+            exit(1)
+
 ################################################################################################
 ################################################################################################
-def firstboot(console):
+def firstboot(console,data):
     
     print("Starting Firstboot")
     try:
@@ -44,7 +129,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("Emergency recovery user password \> ")
-        console.sendline("bsn")
+        console.sendline(data['Recovery Password'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -52,7 +137,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("Emergency recovery user password \(retype to confirm\) \> ")
-        console.sendline("bsn")
+        console.sendline(data['Recovery Password'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -60,7 +145,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("Hostname \> ")
-        console.sendline("analytics")
+        console.sendline(data['Hostname'])
         time.sleep(1)
         console.sendline("1")
     except pexpect.TIMEOUT:
@@ -70,7 +155,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("IPv4 address \[0\.0\.0\.0\/0\] \> ")
-        console.sendline("10.9.40.100/24")
+        console.sendline(data['IPv4 address/subnet mask'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -78,7 +163,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("IPv4 gateway \(Optional\) \> ")
-        console.sendline("10.9.40.1")
+        console.sendline(data['Default Gateway'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -86,7 +171,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("DNS server 1 \(Optional\) \> ")
-        console.sendline("10.3.0.4")
+        console.sendline(data['DNS1'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -94,7 +179,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("DNS server 2 \(Optional\) \> ")
-        console.sendline("10.1.5.200")
+        console.sendline(data['DNS2'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -102,7 +187,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("DNS search domain \(Optional\) \> ")
-        console.sendline("qa.bigswitch.com")
+        console.sendline(data['DNS domain'])
         time.sleep(1)
         console.sendline("1")
     except pexpect.TIMEOUT:
@@ -112,7 +197,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("Cluster name \> ")
-        console.sendline("analytics")
+        console.sendline(data['Cluster Name'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -120,7 +205,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("Cluster description \(Optional\) \> ")
-        console.sendline("analyticsTest")
+        console.sendline(data['Cluster Description'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -128,7 +213,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("Cluster administrator password \> ")
-        console.sendline("adminadmin")
+        console.sendline(data['Password'])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -136,7 +221,7 @@ def firstboot(console):
     time.sleep(2)
     try:
         console.expect("Cluster administrator password \(retype to confirm\) \> ")
-        console.sendline("adminadmin")
+        console.sendline(data['Password'])
         time.sleep(1)
         console.sendline("1")
     except pexpect.TIMEOUT:
@@ -162,11 +247,13 @@ def firstboot(console):
 
 ################################################################################################
 ################################################################################################
-def access_console():
+def access_console(data):
     print("............................")
     print("Starting console access")
     #time.sleep(420)
-    console = pexpect.spawn("telnet 10.1.8.206 7011")
+    url = "telnet " + data['ConsoleServer'] + " " + data['ActiveConsolePort']
+    print url
+    console = pexpect.spawn(url)
     time.sleep(3)
     console.sendline()
     
@@ -242,17 +329,22 @@ def access_console():
 
     print("Starting Firstboot")
     time.sleep(150)
-    firstboot(console)
+    firstboot(console,data)
 ########################################################################################################
 ########################################################################################################
 
-def access_drac():
+def access_drac(data):
     print "Starting Racadm session"
-    racadm = pexpect.spawn("ssh -o \"StrictHostKeyChecking=no\" root@10.9.18.235")
-    time.sleep(3)
 
+    url = "ssh -o \"StrictHostKeyChecking=no\" root@" + data['IdracIp']
+    racadm = pexpect.spawn(url)
+    #racadm = pexpect.spawn("ssh -o \"StrictHostKeyChecking=no\" root@10.9.18.235")
+    time.sleep(3)
+    
+    prompt = "root@" + data['IdracIp'] +"\'s password: "
     try:
-        racadm.expect("root@10.9.18.235's password: ",timeout=30)
+        racadm.expect(prompt,timeout=30)
+        #racadm.expect("root@10.9.18.235's password: ",timeout=30)
 
     except pexpect.TIMEOUT:
         print("Timeout reached durin SSH session to IDRAC")
@@ -275,11 +367,21 @@ def access_drac():
     time.sleep(2)
     racadm.sendline("racadm")
     racadm.expect("racadm>>")
-    time.sleep(2)
-    racadm.sendline("remoteimage -d")
     time.sleep(3)
+    racadm.sendline("remoteimage -d")
+    time.sleep(4)
 
-    racadm.sendline("remoteimage -c -u br -p adminadmin -l \'10.9.18.223:/home/br/images/analytics-7.0.0.iso\'")
+    racadm.sendline("remoteimage -s")
+    try:
+        racadm.expect("Remote File Share is Disabled")
+        time.sleep(2)
+        print("No FIle Share mounted")
+
+    except pexpect.TIMEOUT:
+        print("Mounting remote file system not possible")
+        exit(1)
+
+    racadm.sendline("remoteimage -c -u br -p adminadmin -l \'10.9.18.223:/home/br/images/image1.iso\'")
     try:
         racadm.expect("Remote Image is now Configured")
         print("Remote image configured successfully")

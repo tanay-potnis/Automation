@@ -1,7 +1,7 @@
 {
 	"Recovery Password" : "bsn",
-	"Hostname" : "analytics",
-	"IPv4 address/subnet mask" : "10.9.40.100/24",
+	"Hostname" : ["analytics1","analytics2","analytics3"],
+	"IPv4 address/subnet mask" :["10.9.40.100/24","10.9.40.56/24","10.9.40.57/24"],
 	"Default Gateway" : "10.9.40.1",
 	"Password" : "adminadmin",
 	"DNS1" : "10.3.0.4",
@@ -11,5 +11,9 @@
 	"Active Node" : "10.9.4.3",
 	"Cluster Name" : "Test",
 	"Cluster Description" : "Test",
-	"ifCustomeNTP" : "No"
+	"ifCustomNTP" : "No",
+	"IdracIp" : ["10.9.18.235","10.9.18.238","10.9.18.239"],
+	"ConsoleServer" : "10.1.8.206",
+	"ActiveConsolePort" : ["7011","7038","7039"],
+	"Nodes" : "3"
 }
