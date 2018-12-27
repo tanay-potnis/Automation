@@ -8,7 +8,7 @@
 	"DNS2" : "10.1.5.200",
 	"DNS domain" : "qa.bigswitch.com",
 	"New Cluster" : "Yes",
-	"Active Node" : "10.9.4.3",
+	"Active Node" : "10.9.40.100",
 	"Cluster Name" : "Test",
 	"Cluster Description" : "Test",
 	"ifCustomNTP" : "No",

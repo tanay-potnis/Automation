@@ -30,6 +30,9 @@ CONSOLE_PORT_A=     "7011"
 
 ##########################
 ##########################
+def boo(num):
+    print "boo"
+
 
 def main():
 
@@ -50,14 +53,50 @@ def main():
     get_image(url)
     data = import_config()
     
-    access_drac(data)
-    print("System Rebooting....This will take a few minutes")
-    print("...........................")
+    #access_drac(data)
+    #print("System Rebooting....This will take a few minutes")
+    #print("...........................")
     
-    time.sleep(420)
-    access_console(data)
-    print("Your Node is set up")
+    #time.sleep(420)
+    #access_console(data)
+    #print("Your Node is set up")
 
+#*****Cluster*****
+
+    idrac1 = Process(target=access_drac,args=(data,0))
+    idrac2 = Process(target=access_drac,args=(data,1))
+    idrac3 = Process(target=access_drac,args=(data,2))
+
+    time.sleep(10)
+
+    idrac1.start()
+    idrac2.start()
+    idrac3.start()
+
+    time.sleep(5)
+
+    idrac1.join()
+    idrac2.join()
+    idrac3.join()
+    
+    print "idrac done"
+    time.sleep(420)
+    #Installation and firstboot of active node only
+    access_console(data,0)
+    time.sleep(2)
+    print "active node done"
+
+    console2 = Process(target=access_console,args=(data,1))
+    console3 = Process(target=access_console,args=(data,2))
+    
+    time.sleep(5)
+    console2.start()
+    console3.start()
+    
+    time.sleep(5)
+    console2.join()
+    console3.join()
+    print " all done"
 ###############################################################################################
 ##############################################################################################
 
@@ -108,7 +147,7 @@ def get_image(image):
 
 ################################################################################################
 ################################################################################################
-def firstboot(console,data):
+def firstboot(console,data,i):
     
     print("Starting Firstboot")
     try:
@@ -145,7 +184,7 @@ def firstboot(console,data):
     time.sleep(2)
     try:
         console.expect("Hostname \> ")
-        console.sendline(data['Hostname'])
+        console.sendline(data['Hostname'][i])
         time.sleep(1)
         console.sendline("1")
     except pexpect.TIMEOUT:
@@ -155,7 +194,7 @@ def firstboot(console,data):
     time.sleep(2)
     try:
         console.expect("IPv4 address \[0\.0\.0\.0\/0\] \> ")
-        console.sendline(data['IPv4 address/subnet mask'])
+        console.sendline(data['IPv4 address/subnet mask'][i])
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
@@ -189,11 +228,52 @@ def firstboot(console,data):
         console.expect("DNS search domain \(Optional\) \> ")
         console.sendline(data['DNS domain'])
         time.sleep(1)
-        console.sendline("1")
+
+        if(i>0):
+            console.sendline("2")
+        else:
+            console.sendline("1")
     except pexpect.TIMEOUT:
         print("FIRSTBOOT ERROR --Go interact")
         console.interact()
 
+
+    if(i>0):
+        try:
+            console.expect("Existing Analytics Node address \> ")
+            console.sendline(data['Active Node'])
+        except pexpect.TIMEOUT:
+            print("FIRSTBOOT ERROR --Go interact")
+            console.interact()
+
+        time.sleep(2)
+        try:
+            console.expect("Cluster administrator password \>")
+            console.sendline(data['Password'])
+        except pexpect.TIMEOUT:
+            print("FIRSTBOOT ERROR --Go interact")
+            console.interact()
+
+        time.sleep(2)
+        try:
+            console.expect("Cluster administrator password \(retype to confirm\) \> ")
+            console.sendline(data['Password'])
+            time.sleep(1)
+            console.sendline("1")
+        except pexpect.TIMEOUT:
+            print("FIRSTBOOT ERROR --Go interact")
+            console.interact()
+        
+        time.sleep(5)
+        try:
+            console.expect("Press enter to continue \> ")
+            console.sendline()
+        except pexpect.TIMEOUT:
+            print("FIRSTBOOT ERROR --Go interact")
+            console.interact()
+        return
+
+        
     time.sleep(2)
     try:
         console.expect("Cluster name \> ")
@@ -247,11 +327,11 @@ def firstboot(console,data):
 
 ################################################################################################
 ################################################################################################
-def access_console(data):
+def access_console(data,i):
     print("............................")
     print("Starting console access")
     #time.sleep(420)
-    url = "telnet " + data['ConsoleServer'] + " " + data['ActiveConsolePort']
+    url = "telnet " + data['ConsoleServer'] + " " + data['ActiveConsolePort'][i]
     print url
     console = pexpect.spawn(url)
     time.sleep(3)
@@ -329,19 +409,20 @@ def access_console(data):
 
     print("Starting Firstboot")
     time.sleep(150)
-    firstboot(console,data)
+    firstboot(console,data,i)
 ########################################################################################################
 ########################################################################################################
 
-def access_drac(data):
+def access_drac(data,i):
     print "Starting Racadm session"
+    print i
 
-    url = "ssh -o \"StrictHostKeyChecking=no\" root@" + data['IdracIp']
+    url = "ssh -o \"StrictHostKeyChecking=no\" root@" + data['IdracIp'][i]
     racadm = pexpect.spawn(url)
     #racadm = pexpect.spawn("ssh -o \"StrictHostKeyChecking=no\" root@10.9.18.235")
     time.sleep(3)
     
-    prompt = "root@" + data['IdracIp'] +"\'s password: "
+    prompt = "root@" + data['IdracIp'][i] +"\'s password: "
     try:
         racadm.expect(prompt,timeout=30)
         #racadm.expect("root@10.9.18.235's password: ",timeout=30)
@@ -416,7 +497,56 @@ def access_drac(data):
         print("Server not rebooted")
         racadm.interact()
 
+######################################################################################################
+#####################################################################################################
+'''
+def main():
 
+    print("Initiating auto Install")
+    import_config()
+    print("Pulling image")
+    if(len(sys.argv)>2):
+        print("Too many arguments")
+        #print(sys.argv)
+        sys.exit(1)
+
+    if(len(sys.argv)<2):
+        print("Not enough arguments Restart with Jenkins URL")
+        sys.exit(1)
+
+
+    url = sys.argv[1]
+    get_image(url)
+    data = import_config()
+
+    #access_drac(data)
+    print("System Rebooting....This will take a few minutes")
+    print("...........................")
+
+    #time.sleep(420)
+    #access_console(data)
+    print("Your Node is set up")
+
+#*****Cluster*****
+tup1 = (data,0)
+idrac1 = Process(target=access_drac,args=tup1)
+idrac2 = Process(target=access_drac,args=(data,1))
+idrac3 = Process(target=access_drac,args=(data,1))
+
+time.sleep(10)
+
+idrac1.start()
+idrac2.start()
+idrac3.start()
+
+time.sleep(5)
+
+idrac1.join()
+idrac2.join()
+idrac3.join()
+'''
+#####################################################################################################
+####################################################################################################
 if __name__ == "__main__":
     main()
 
