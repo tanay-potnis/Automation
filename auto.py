@@ -37,7 +37,7 @@ def boo(num):
 def main():
 
     print("Initiating auto Install")
-    import_config()
+    #import_config()
     print("Pulling image")
     if(len(sys.argv)>2):
         print("Too many arguments")
@@ -62,7 +62,7 @@ def main():
     #print("Your Node is set up")
 
 #*****Cluster*****
-
+    '''
     idrac1 = Process(target=access_drac,args=(data,0))
     idrac2 = Process(target=access_drac,args=(data,1))
     idrac3 = Process(target=access_drac,args=(data,2))
@@ -97,6 +97,51 @@ def main():
     console2.join()
     console3.join()
     print " all done"
+    '''
+
+    #Scaled Cluster formatation
+    instance_count = int(data['Nodes'])
+    idrac = []
+    for i in range(instance_count):
+        idrac.append(Process(target=access_drac,args=(data,i)))
+    time.sleep(5)
+
+    for j in range(instance_count):
+        idrac[j].start()
+    time.sleep(5)
+    
+    for k in range(instance_count):
+        idrac[k].join()
+    time.sleep(5)
+    
+    print("Idrac done")
+
+    access_console(data,0)
+    time.sleep(2)
+    print "active node done"
+    
+    console = []
+    for x in range(instance_count-1):
+        console.append(Process(target=access_console,args=(data,x+1)))
+    
+    print "console is"
+    print console
+    time.sleep(5)
+    for l in range(instance_count-1):
+        console[l].start()
+
+    time.sleep(5)
+    for m in range(instance_count-1):
+        console[m].join()
+    time.sleep(5)
+    
+    print("all done")
+
+    
+
+
+
+
 ###############################################################################################
 ##############################################################################################
 
@@ -330,6 +375,12 @@ def firstboot(console,data,i):
 def access_console(data,i):
     print("............................")
     print("Starting console access")
+
+    if(i==0):
+        time.sleep(420)
+    else:
+        time.sleep(60)
+
     #time.sleep(420)
     url = "telnet " + data['ConsoleServer'] + " " + data['ActiveConsolePort'][i]
     print url
