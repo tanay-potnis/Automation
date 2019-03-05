@@ -513,13 +513,14 @@ def access_drac(data,i):
         print("Mounting remote file system not possible")
         exit(1)
 
-    racadm.sendline("remoteimage -c -u br -p adminadmin -l \'10.9.18.223:/home/br/images/image1.iso\'")
+    racadm.sendline("remoteimage -c -u br -p adminadmin -l '10.106.10.223:/home/br/images/image1.iso'")
     try:
         racadm.expect("Remote Image is now Configured")
         print("Remote image configured successfully")
 
     except pexpect.TIMEOUT:
         print("Remote Image not configured")
+        sys.exit(3)
 
     
     time.sleep(3)

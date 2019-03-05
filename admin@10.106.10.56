@@ -1,0 +1,29 @@
+#!/bin/bash
+# Reset to factory setings
+
+echo "Starting RMA procedure"
+
+if [ ! $UID -eq 0 ] ; then
+  echo "This command needs to be run with sudo"
+  exit 1
+fi
+
+docker restart datacollect
+sleep 10s
+
+redis-cli -h 169.254.16.3 -p 9379 flushall
+sleep 5s
+
+redis-cli -h 169.254.16.3 -p 6379 flushall
+sleep 5s
+
+./stop-analytics.sh
+sleeps 10s
+
+rm -rf /var/lib/analytics/data/nodes
+sleep 15s
+
+echo "RMA DONE"
+
+
+
