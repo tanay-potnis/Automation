@@ -42,7 +42,7 @@ sleep 5s
 echo "Deleting data on SSD"
 rm -rf /var/lib/analytics/data/nodes
 #sleep 15s
-echo "Data on Disk deleted
+echo "Data on Disk deleted"
 
 read -p "Resetting back to firstboot. Continue ? (yes/no)" ans
 if [  $ans != "yes" ]; then
