@@ -13,7 +13,7 @@
 	"Cluster Description" : "Test",
 	"ifCustomNTP" : "No",
 	"IdracIp" : ["10.106.10.235","10.106.10.238","10.106.10.239"],
-	"ConsoleServer" : "10.1.8.206",
+	"ConsoleServer" : "10.110.6.69",
 	"ActiveConsolePort" : ["6041","6042","6043"],
 	"Nodes" : "3"
 }

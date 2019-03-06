@@ -8,7 +8,7 @@ if [ ! $UID -eq 0 ] ; then
   exit 1
 fi
 
-read -p "DeClustering Node. Continue ? (yes/no)" ans
+read -p "Running this process will delete all data on the disk. Continue ? (yes/no)" ans
 if [  $ans != "yes" ]; then
        echo "Exiting Decluster procedure"
        exit 1
@@ -39,8 +39,16 @@ echo "Stopping Analytics. Removing all containers"
 /opt/bigswitch/stop-analytics.sh
 sleep 5s
 
+echo "Deleting data on SSD"
 rm -rf /var/lib/analytics/data/nodes
 #sleep 15s
+echo "Data on Disk deleted
+
+read -p "Resetting back to firstboot. Continue ? (yes/no)" ans
+if [  $ans != "yes" ]; then
+       echo "Exiting Decluster procedure"
+       exit 1
+fi
 
 #echo "RMA DONE"
 floodlight-boot-factory-default
