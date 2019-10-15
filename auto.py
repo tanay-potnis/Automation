@@ -444,7 +444,7 @@ def access_console(data,i):
    # except pexpect.TIMEOUT:
    #     print("Check IDRAC console...something wrong at enter to condirm")
 
-    print("Installing. This will take several minutes. It's going to take a long time. A really long time.")
+    print("Installing. This will take several minutes.")
     try:
         #console.interact()
         console.expect("Please remove the installation media and press Enter to reboot \> ",timeout=5200)
