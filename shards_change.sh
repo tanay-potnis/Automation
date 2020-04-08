@@ -69,7 +69,9 @@ curl -s -H "Content-Type: application/json" -XPUT $(eshash elastic_curl) 169.254
 }'
 #exit 1
 echo "Template change done"
-	
+
+current_date=$(date +%Y)"."$(date +%m)"."$(date +%d)
+
 
 INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | awk '{print $3}' ))
 #echo ${INDICES[0]}
@@ -81,9 +83,14 @@ for i in "${INDICES[@]}"
     do
         #echo $i
 	
-	wildcard="-*"
-	dest=$i$wildcard
-	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]] ; then
+	#wildcard="-*"
+	#dest=$i$wildcard
+	status_of_index=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $2}')
+	if [ $status_of_index != "open" ] ; then
+		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_close
+	fi
+
+	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" == *"$current_date" ]] ; then
 		echo "$i"
 		
 		curl  -XPOST -H "Content-Type:application/json"  $(eshash elastic_curl) 169.254.16.2:9201/_reindex -d '
@@ -98,7 +105,7 @@ for i in "${INDICES[@]}"
 
 					"script": {
 						"lang": "painless",
-						"source": "ctx._index=ctx._index + \"-temp\""
+						"source": "ctx._index=ctx._index + \"-reindexed\""
 					}
 
 				}'
@@ -110,7 +117,8 @@ for i in "${INDICES[@]}"
 		if [ -z "$result" ] ; then
 			:
 		else
-			curl -s -XDELETE admin:bsn@169.254.16.2:9201/"$i"	
+			curl -s -XDELETE $(eshash elastic_curl) 169.254.16.2:9201/"$i"
+			echo "Deleted $i"	
 		fi
 	
     done
