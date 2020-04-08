@@ -87,10 +87,10 @@ for i in "${INDICES[@]}"
 	#dest=$i$wildcard
 	status_of_index=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $2}')
 	if [ $status_of_index != "open" ] ; then
-		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_close
+		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_open
 	fi
 
-	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" == *"$current_date" ]] ; then
+	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != *"$current_date" ]] ; then
 		echo "$i"
 		
 		curl  -XPOST -H "Content-Type:application/json"  $(eshash elastic_curl) 169.254.16.2:9201/_reindex -d '
@@ -100,7 +100,7 @@ for i in "${INDICES[@]}"
 					},
 
 					"dest": {
-						"index":"test"
+						"index":""
 					},
 
 					"script": {
@@ -111,7 +111,7 @@ for i in "${INDICES[@]}"
 				}'
 	fi
 		
-		new_index=$i"-temp"
+		new_index=$i"-reindexed"
 		result=($(curl -s -H "Content-Type:application/json" -XGET $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | grep  $new_index))
 
 		if [ -z "$result" ] ; then
