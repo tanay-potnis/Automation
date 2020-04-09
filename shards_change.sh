@@ -18,7 +18,7 @@ fi
 #exit 0
 #exit_status=$?
 
-echo "Changing template_data to 2 shards"
+echo "Changing template_data "
 
 curl -s -H "Content-Type: application/json" -XPUT $(eshash elastic_curl) 169.254.16.2:9201/_template/template_data -d '
 {
@@ -70,8 +70,8 @@ curl -s -H "Content-Type: application/json" -XPUT $(eshash elastic_curl) 169.254
 #exit 1
 echo "Template change done"
 
-current_date=$(date +%Y)"."$(date +%m)"."$(date +%d)
-
+current_date=$(date -u "+%Y.%m.%d")
+last_date=$(date -u "+%Y.%m.%d" -d '-1 days')
 
 INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | awk '{print $3}' ))
 #echo ${INDICES[0]}
@@ -90,7 +90,18 @@ for i in "${INDICES[@]}"
 		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_open
 	fi
 
-	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != *"$current_date" ]] ; then
+	if [ "$i" == *"$last_date" ] ; then
+		docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+		sleep 10s
+		docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+	fi
+
+	if [ ($docs_2 - $docs_1) -gt 0 ] ; then
+		continue
+	fi
+
+
+	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != *"$current_date" ]] && [[ "$i" != ".ml"* ]] ; then
 		echo "$i"
 		
 		curl  -XPOST -H "Content-Type:application/json"  $(eshash elastic_curl) 169.254.16.2:9201/_reindex -d '
