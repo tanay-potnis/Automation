@@ -90,18 +90,19 @@ for i in "${INDICES[@]}"
 		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_open
 	fi
 
-	if [ "$i" == *"$last_date" ] ; then
-		docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
-		sleep 10s
-		docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
-	fi
-
-	if [ ($docs_2 - $docs_1) -gt 0 ] ; then
+	#if [ "$i" == *"$last_date" ] ; then
+	#	docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+	#	sleep 10s
+	#	docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+	#fi
+	
+	status=$( if_alive )
+	if [  $status == "alive" ] ; then
 		continue
 	fi
 
 
-	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != *"$current_date" ]] && [[ "$i" != ".ml"* ]] ; then
+	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != ".ml"* ]] ; then
 		echo "$i"
 		
 		curl  -XPOST -H "Content-Type:application/json"  $(eshash elastic_curl) 169.254.16.2:9201/_reindex -d '
@@ -138,3 +139,17 @@ for i in "${INDICES[@]}"
 
 exit 0
 
+
+if_alive ()
+{
+	arg1=$1
+	 docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$arg1" | awk '{print $7}' ))
+         sleep 10s
+         docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$arg1" | awk '{print $7}' ))
+	
+	 if [ ($docs_2 - $docs_1) -gt 0 ] ; then
+                staus="alive"
+        fi
+
+	echo "$status"
+}
