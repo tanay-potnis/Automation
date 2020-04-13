@@ -90,14 +90,14 @@ for i in "${INDICES[@]}"
 		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_open
 	fi
 
-	#if [ "$i" == *"$last_date" ] ; then
-	#	docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
-	#	sleep 10s
-	#	docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
-	#fi
+	#Check if any index is reading events
+	docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+	sleep 10s
+	docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+
 	
-	status=$( if_alive )
-	if [  $status == "alive" ] ; then
+	
+	if [ `expr $docs_2 - $docs_1` -gt 0 ] ; then
 		continue
 	fi
 
@@ -140,16 +140,4 @@ for i in "${INDICES[@]}"
 exit 0
 
 
-if_alive ()
-{
-	arg1=$1
-	 docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$arg1" | awk '{print $7}' ))
-         sleep 10s
-         docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$arg1" | awk '{print $7}' ))
-	
-	 if [ ($docs_2 - $docs_1) -gt 0 ] ; then
-                staus="alive"
-        fi
 
-	echo "$status"
-}
