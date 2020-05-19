@@ -73,7 +73,7 @@ echo "Template change done"
 current_date=$(date -u "+%Y.%m.%d")
 last_date=$(date -u "+%Y.%m.%d" -d '-1 days')
 
-INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | awk '{print $3}' ))
+INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | awk '{print $3}' | sort -t '2' -k2 -r  ))
 #echo ${INDICES[0]}
 #echo ${INDICES[1]}
 #echo ${INDICES[2]}
@@ -95,17 +95,34 @@ for i in "${INDICES[@]}"
 	sleep 10s
 	docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
 
-	
-	
 	if [ `expr $docs_2 - $docs_1` -gt 0 ] ; then
 		continue
 	fi
+	
 
-
+        
 	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != ".ml"* ]] ; then
 		date -u "+[%F:%T]"
 		echo "$i"
 		
+		#Getting prefix of index for painless code
+		if [[ "$i" == "bro"*  ]] || [[ "$i" == "trackedhost"* ]] || [[ "$i" == "metricbeat"* ]] || [[ "$i" == "dns"* ]]	|| [[ "$i" == "dhcp"* ]] ; then
+			prefix=$(echo "$i" | cut -d'-' -f 1)
+			date=$(echo "$i" | cut -d'-' -f 2)
+		else
+			prefix=$(echo "$i" | cut -d'-' -f 1-2)
+			date=$(echo "$i" | cut -d'-' -f 3)
+		fi
+		prefix=$prefix"-"
+		
+		#Ignoring indices over 10Gb
+		index_size_in_bytes=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_stats | jq '._all.primaries.store.size_in_bytes'))
+
+		if [ $index_size_in_bytes -ge 10737418240 ]; then
+			:
+			echo "Index bigger than 10GB"
+		fi
+
 		curl  -XPOST -H "Content-Type:application/json"  $(eshash elastic_curl) 169.254.16.2:9201/_reindex -d '
 				{
 					"source": {
@@ -118,13 +135,15 @@ for i in "${INDICES[@]}"
 
 					"script": {
 						"lang": "painless",
-						"source": "ctx._index=ctx._index + \"-reindexed\""
+						"source": "ctx._index=\"'$prefix'\" + \"reindexed-\" + (ctx._index.substring(\"'$prefix'\".length(), ctx._index.length()))" 
+
 					}
 
 				}'
-	fi
+	
 		
-		new_index=$i"-reindexed"
+		new_index=$prefix"reindexed-"$date
+		echo $new_index
 		result=($(curl -s -H "Content-Type:application/json" -XGET $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | grep  $new_index))
 
 		if [ -z "$result" ] ; then
@@ -133,7 +152,8 @@ for i in "${INDICES[@]}"
 			curl -s -XDELETE $(eshash elastic_curl) 169.254.16.2:9201/"$i"
 			echo "Deleted $i"	
 		fi
-	
+	fi
+
     done
 
     echo "Reindexing Complete"
