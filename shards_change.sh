@@ -119,8 +119,8 @@ for i in "${INDICES[@]}"
 		index_size_in_bytes=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_stats | jq '._all.primaries.store.size_in_bytes'))
 
 		if [ $index_size_in_bytes -ge 10737418240 ]; then
-			:
 			echo "Index bigger than 10GB"
+			continue
 		fi
 
 		curl  -XPOST -H "Content-Type:application/json"  $(eshash elastic_curl) 169.254.16.2:9201/_reindex -d '
