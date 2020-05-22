@@ -10,8 +10,10 @@ fi
 number_of_nodes=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cluster/health | jq '.number_of_data_nodes')
 if [ $number_of_nodes == "1" ] ; then
 	shards=1
+	max_shards=5000
 else
 	shards=3
+	max_shards=15000
 fi
 
 
@@ -73,7 +75,7 @@ echo "Template change done"
 current_date=$(date -u "+%Y.%m.%d")
 last_date=$(date -u "+%Y.%m.%d" -d '-1 days')
 
-INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | awk '{print $3}' | sort -t '2' -k2 -r  ))
+INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | grep open | awk '{print $3}' | sort -t '2' -k2 -r  ))
 #echo ${INDICES[0]}
 #echo ${INDICES[1]}
 #echo ${INDICES[2]}
@@ -84,7 +86,16 @@ for i in "${INDICES[@]}"
         #echo $i
 	
 	#wildcard="-*"
-	#dest=$i$wildcard
+	#dest=$i$wildcar
+	current_shard_count=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cluster/health | jq '.active_primary_shards'
+	if [ $current_shard_count -le $max_shards ] ; then
+		echo "Sharding to limit complete"
+		exit 0
+	fi
+
+	shards_left=`expr $max_shards - $current_shard_count`
+	echo "$shards_left of $max_shards left"
+
 	status_of_index=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $2}')
 	if [ $status_of_index != "open" ] ; then
 		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_open
@@ -101,7 +112,7 @@ for i in "${INDICES[@]}"
 	
 
         
-	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != ".ml"* ]] ; then
+	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != ".ml"* ]] && [[ "$i" != *"reindexed"* ]] ; then
 		date -u "+[%F:%T]"
 		echo "$i"
 		
