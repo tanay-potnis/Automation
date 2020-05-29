@@ -22,60 +22,60 @@ fi
 
 echo "Changing template_data "
 
-curl -s -H "Content-Type: application/json" -XPUT $(eshash elastic_curl) 169.254.16.2:9201/_template/template_data -d '
-{
-  "index_patterns": ["flow-*", "dns-*", "dhcp-*", "trackedhost-*", "bigtap-*", "bro_*", "metricbeat-*", "congestion-ip-*", "congestion-pauseframe-*", "network_topology-*"],
-  "settings" : {
-    "index.refresh_interval" : "5s",
-    "number_of_shards": "'$shards'",
-    "auto_expand_replicas": "0-1"
-  },
-  "mappings" : {
-    "doc": {
-      "properties": {
-        "user": {"type": "keyword"},
-        "sIp": {"type": "keyword"},
-        "dIp": {"type": "keyword"},
-        "dP": {"type": "keyword"},
-        "sDesc": {"type": "keyword"},
-        "dDesc": {"type": "keyword"},
-        "devicePort": {"type": "keyword"},
-        "switchPort": {"type": "keyword"},
-        "firstSwitched": {"type": "date"},
-        "lastSwitched": {"type": "date"},
-        "sGeo": {
-          "properties": {
-            "location": {"type": "geo_point"}
-          }
-        },
-        "dGeo": {
-          "properties": {
-            "location": {"type": "geo_point"}
-          }
-        },
-        "rGeo": {
-          "properties": {
-            "location": {"type": "geo_point"}
-          }
-        },
-        "firstSeen": {"type": "date"},
-        "lastSeen": {"type": "date"},
-        "yiaddr": {"type": "keyword"},
-        "yname": {"type": "keyword"},
-        "ipAddr": {"type": "keyword"},
-        "hostName": {"type": "keyword"},
-        "qnamelist": {"type": "keyword"}
-      }
-    }
-  }
-}'
+#curl -s -H "Content-Type: application/json" -XPUT $(eshash elastic_curl) 169.254.16.2:9201/_template/template_data -d '
+#{
+#  "index_patterns": ["flow-*", "dns-*", "dhcp-*", "trackedhost-*", "bigtap-*", "bro_*", "metricbeat-*", "congestion-ip-*", "congestion-pauseframe-*", "network_topology-*"],
+#  "settings" : {
+#    "index.refresh_interval" : "5s",
+#    "number_of_shards": "'$shards'",
+#    "auto_expand_replicas": "0-1"
+#  },
+#  "mappings" : {
+#    "doc": {
+#      "properties": {
+#        "user": {"type": "keyword"},
+#        "sIp": {"type": "keyword"},
+#        "dIp": {"type": "keyword"},
+#        "dP": {"type": "keyword"},
+#        "sDesc": {"type": "keyword"},
+#        "dDesc": {"type": "keyword"},
+#        "devicePort": {"type": "keyword"},
+#        "switchPort": {"type": "keyword"},
+#        "firstSwitched": {"type": "date"},
+#        "lastSwitched": {"type": "date"},
+#        "sGeo": {
+#          "properties": {
+#            "location": {"type": "geo_point"}
+#          }
+#        },
+#        "dGeo": {
+#          "properties": {
+#            "location": {"type": "geo_point"}
+#          }
+#        },
+#        "rGeo": {
+#          "properties": {
+#            "location": {"type": "geo_point"}
+#          }
+#        },
+#        "firstSeen": {"type": "date"},
+#        "lastSeen": {"type": "date"},
+#        "yiaddr": {"type": "keyword"},
+#        "yname": {"type": "keyword"},
+#        "ipAddr": {"type": "keyword"},
+#        "hostName": {"type": "keyword"},
+#        "qnamelist": {"type": "keyword"}
+#      }
+#    }
+#  }
+#}'
 #exit 1
-echo "Template change done"
+#echo "Template change done"
 
 current_date=$(date -u "+%Y.%m.%d")
 last_date=$(date -u "+%Y.%m.%d" -d '-1 days')
 
-INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | grep open | awk '{print $3}' | sort -t '2' -k2 -r  ))
+INDICES=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices | grep open | awk '{ if($1 == "close") print $2; else print $3 }' | sort -t '2' -k2 -r  ))
 #echo ${INDICES[0]}
 #echo ${INDICES[1]}
 #echo ${INDICES[2]}
@@ -96,8 +96,8 @@ for i in "${INDICES[@]}"
 	shards_left=`expr $max_shards - $current_shard_count`
 	echo "$shards_left of $max_shards left"
 
-	status_of_index=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $2}')
-	if [ $status_of_index != "open" ] ; then
+	status_of_index=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $1}')
+	if [ $status_of_index == "close" ] ; then
 		curl -XPOST $(eshash elastic_curl) 169.254.16.2:9201/"$i"/_open
 	fi
 
