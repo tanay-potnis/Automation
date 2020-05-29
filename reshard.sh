@@ -87,13 +87,13 @@ for i in "${INDICES[@]}"
 	
 	#wildcard="-*"
 	#dest=$i$wildcar
-	current_shard_count=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cluster/health | jq '.active_primary_shards'
+	current_shard_count=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cluster/health | jq '.active_primary_shards')
 	if [ $current_shard_count -le $max_shards ] ; then
 		echo "Sharding to limit complete"
 		exit 0
 	fi
 
-	shards_left=`expr $max_shards - $current_shard_count`
+	shards_left=`expr $current_shard_count - $max_shards`
 	echo "$shards_left of $max_shards left"
 
 	status_of_index=$(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $1}')
