@@ -102,17 +102,17 @@ for i in "${INDICES[@]}"
 	fi
 
 	#Check if any index is reading events
-	docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
-	sleep 10s
-	docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+	#docs_1=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
+	#sleep 10s
+	#docs_2=($(curl -s $(eshash elastic_curl) 169.254.16.2:9201/_cat/indices/"$i" | awk '{print $7}' ))
 
-	if [ `expr $docs_2 - $docs_1` -gt 0 ] ; then
-		continue
-	fi
+	#if [ `expr $docs_2 - $docs_1` -gt 0 ] ; then
+	#	continue
+	#fi
 	
 
         
-	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != ".ml"* ]] && [[ "$i" != *"reindexed"* ]] ; then
+	if [[ "$i" != ".config" ]] &&  [[ "$i" != ".kibana" ]] && [[ "$i" != ".watch"* ]] && [[ "$i" != ".security-6" ]] && [[ "$i" != ".monitoring"* ]] && [[ "$i" != ".triggered_watches" ]]  && [[ "$i" != ".ml"* ]] && [[ "$i" != *"reindexed"* ]] && [[ "$i" != *"$current_date" ]] && [[ "$i" != *"$last_date" ]] ; then
 		date -u "+[%F:%T]"
 		echo "$i"
 		
