@@ -385,7 +385,7 @@ def access_console(data,i):
     url = "telnet " + data['ConsoleServer'] + " " + data['ActiveConsolePort'][i]
     print url
     console = pexpect.spawn(url)
-    time.sleep(3)
+    time.sleep(7)
     console.sendline()
     
     ret = 90
