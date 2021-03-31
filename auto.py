@@ -415,7 +415,7 @@ def access_console(data,i):
        #print console.buffer
        sys.exit()
 
-
+    time.sleep(250)
     try:
         console.expect("Press Enter to confirm \> ",timeout=100)
         console.sendline()
@@ -472,10 +472,13 @@ def access_drac(data,i):
     racadm = pexpect.spawn(url)
     #racadm = pexpect.spawn("ssh -o \"StrictHostKeyChecking=no\" root@10.9.18.235")
     time.sleep(3)
-    
-    prompt = "root@" + data['IdracIp'][i] +"\'s password: "
+    print "bobobobobobobobobobobobo" 
+    prompt1 = "root@" + data['IdracIp'][i] +"\'s password: "
+    prompt2 = "Password: "
+    login_prompt = [prompt1,prompt2]
+    print prompt1
     try:
-        racadm.expect(prompt,timeout=30)
+        racadm.expect([prompt1,prompt2],timeout=30)
         #racadm.expect("root@10.9.18.235's password: ",timeout=30)
 
     except pexpect.TIMEOUT:
@@ -486,10 +489,13 @@ def access_drac(data,i):
 
     print("Logging in")
     racadm.sendline("calvin")
+    print "after password"
     time.sleep(3)
+    prompt = ["/admin1-> ","racadm>> "]
 
     try:
-        racadm.expect("/admin1-> ",timeout=30)
+        #racadm.expect("/admin1-> ",timeout=30)
+        racadm.expect(["/admin1-> ","racadm>>"],timeout=30)
 
     except pexpect.TIMEOUT:
         print("Login Unsucessful")
@@ -498,12 +504,13 @@ def access_drac(data,i):
         
     time.sleep(2)
     racadm.sendline("racadm")
-    racadm.expect("racadm>>")
+    #racadm.expect("racadm>>")
     time.sleep(3)
     racadm.sendline("remoteimage -d")
     time.sleep(4)
 
     racadm.sendline("remoteimage -s")
+    time.sleep(4)
     try:
         racadm.expect("Remote File Share is Disabled")
         time.sleep(2)
@@ -511,7 +518,8 @@ def access_drac(data,i):
 
     except pexpect.TIMEOUT:
         print("Mounting remote file system not possible")
-        exit(1)
+        racadm.interact()
+        sys.exit(1)
 
     racadm.sendline("remoteimage -c -u br -p adminadmin -l '10.106.10.223:/home/br/images/image1.iso'")
     try:
